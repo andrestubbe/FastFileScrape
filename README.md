@@ -190,10 +190,12 @@ MIT License — See [LICENSE](LICENSE) file for details.
 
 ## Related Projects
 
-- [FastFileIndex](https://github.com/andrestubbe/FastFileIndex) - Binary file indexing with mmap support
-- [FastFileSearch](https://github.com/andrestubbe/FastFileSearch) - Prefix Trie, N-Gram index, and Ranking engine
-- [FastFileWatch](https://github.com/andrestubbe/FastFileWatch) - USN Journal-based live file monitoring
-- [FastCore](https://github.com/andrestubbe/FastCore) - Unified JNI loader and platform abstraction
+- [FastFileIndex](https://github.com/andrestubbe/FastFileIndex) — Binary file indexing with mmap support
+- [FastFileSearch](https://github.com/andrestubbe/FastFileSearch) — Prefix Trie, N‑Gram index, and Ranking engine
+- [FastFileWatch](https://github.com/andrestubbe/FastFileWatch) — USN Journal‑based live file monitoring
+- [FastCore](https://github.com/andrestubbe/FastCore) — Unified JNI loader and platform abstraction
+- FastVectorDB — High‑performance local vector database for embeddings
+- FastRAG — Retrieval‑Augmented Generation engine for FastJava
 
 ---
 
