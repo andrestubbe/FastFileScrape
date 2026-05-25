@@ -1,12 +1,26 @@
 # FastFileScrape v0.1.0 [ALPHA] — Ultra‑Fast File Tree & Content Scraper for Java
 
+[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen.svg)](https://github.com/andrestubbe/FastFileIndex/releases/tag/v0.1.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.java.com)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010+-lightgrey.svg)]()
+[![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe)
+
 FastFileScrape is the high‑speed file scraping module of the FastJava ecosystem.  
 It provides two core capabilities:
 
 - **FastFileTree** — build complete directory trees with include/exclude rules
 - **FastFileScrapeContent** — extract file contents with chunking for LLMs and agents
 
-Pure Java. Zero native dependencies. Zero bloat.
+[![FastFileIndex Showcase](docs/screenshot.png)](https://www.youtube.com/watch?v=BZsqQl7WqWk)
+
+---
+
+## Table of Contents
+
+- [Key Features](#key-features)
+- [TODO](#key-features)
+
 
 ---
 
