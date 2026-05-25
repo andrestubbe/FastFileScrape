@@ -54,6 +54,7 @@ It provides two core capabilities:
 - Output to stdout or file
 - JSONL mode for AI pipelines
 
+
 ---
 
 ## Quick Start
@@ -69,12 +70,19 @@ fastfilescrape content --root . --include "**/*.java" --out repo.txt
 fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.jsonl
 
 
-Installation
-Option 1 — JAR
-Download fastfilescrape.jar and add it to your classpath.
 
-Option 2 — Maven (JitPack)
-xml
+---
+
+# 🟧 **HEADER 9 — Installation**
+
+## Installation
+
+### Option 1 — JAR  
+Download `fastfilescrape.jar` and add it to your classpath.
+
+### Option 2 — Maven (JitPack)
+
+```xml
 <repositories>
     <repository>
         <id>jitpack.io</id>
@@ -89,9 +97,7 @@ xml
        <version>v0.1.0</version>
    </dependency>
 </dependencies>
-Demo (Java)
-java
-import fastfilescrape.*;
+
 
 public class Demo {
     public static void main(String[] args) throws Exception {
