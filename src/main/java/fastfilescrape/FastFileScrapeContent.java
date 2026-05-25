@@ -45,7 +45,11 @@ public final class FastFileScrapeContent {
                 }
                 String content = Files.readString(file, cfg.charset);
                 Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
-                    sink.onChunk(file, chunkIndex, chunk);
+                    try {
+                        sink.onChunk(file, chunkIndex, chunk);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 });
                 return FileVisitResult.CONTINUE;
             }

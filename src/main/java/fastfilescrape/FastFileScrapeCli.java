@@ -77,28 +77,29 @@ public final class FastFileScrapeCli {
 
     private static void printHelp() {
         System.out.println("""
-                fastfilescrape [mode] --root <path> [options]
+            fastfilescrape [mode] --root <path> [options]
 
-                Modes:
-                  tree              Nur Struktur-Baum
-                  content           Nur Datei-Inhalte
-                  all               Baum + Inhalte
+            Modes:
+              tree              Structure-only file tree
+              content           File contents only
+              all               Tree + contents
 
-                Options:
-                  --root <path>                 Startverzeichnis (default: .)
-                  --include <glob>              Include-Pattern (mehrfach)
-                  --exclude <glob>              Exclude-Pattern (mehrfach)
-                  --out <file|->                Ausgabe-Datei oder - für stdout (default: -)
-                  --format <text|jsonl>         Ausgabeformat (default: text)
-                  --max-chunk-bytes <int>       Chunkgröße in Bytes (default: 64000)
-                  --max-file-size <long>        Max. Dateigröße in Bytes (default: 5000000)
+            Options:
+              --root <path>                 Start directory (default: .)
+              --include <glob>              Include pattern (repeatable)
+              --exclude <glob>              Exclude pattern (repeatable)
+              --out <file|->                Output file or - for stdout (default: -)
+              --format <text|jsonl>         Output format (default: text)
+              --max-chunk-bytes <int>       Chunk size in bytes (default: 64000)
+              --max-file-size <long>        Max file size in bytes (default: 5000000)
 
-                Beispiele:
-                  fastfilescrape tree --root . --include "**/*.java"
-                  fastfilescrape content --root . --include "**/*.java" --out repo.txt
-                  fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.jsonl
-                """);
+            Examples:
+              fastfilescrape tree --root . --include "**/*.java"
+              fastfilescrape content --root . --include "**/*.java" --out repo.txt
+              fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.jsonl
+            """);
     }
+
 
     private static Mode parseMode(String[] args) {
         if (args.length == 0) return Mode.ALL;
