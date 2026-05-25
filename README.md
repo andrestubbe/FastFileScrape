@@ -6,7 +6,6 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010+-lightgrey.svg)]()
 [![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe/FastFileScrape)
 
-
 **⚡ Scrape and process millions of files in milliseconds with zero latency.**
 
 FastFileScrape is the high‑speed file scraping module of the FastJava ecosystem.  
@@ -34,6 +33,7 @@ It provides two core capabilities:
 ## Key Features
 
 ### 🟩 FastFileTree — Directory Structure Engine
+
 - Recursive directory walking
 - Include/Exclude glob filters
 - Sorted output (folders → files)
@@ -41,6 +41,7 @@ It provides two core capabilities:
 - Git‑ignore aware (optional)
 
 ### 🟧 FastFileScrapeContent — File Content Engine
+
 - Extracts file contents with UTF‑8 safety
 - Chunking by byte size or newline boundaries
 - Include/Exclude patterns
@@ -48,39 +49,38 @@ It provides two core capabilities:
 - Ideal for LLM context ingestion
 
 ### 🟦 CLI Tool — `fastfilescrape`
+
 - `tree` → structure only
 - `content` → file contents only
 - `all` → both combined
 - Output to stdout or file
 - JSONL mode for AI pipelines
 
-
 ---
 
 ## Quick Start
 
-
 # Show directory tree
+
 fastfilescrape tree --root . --include "**/*.java"
 
 # Extract file contents
+
 fastfilescrape content --root . --include "**/*.java" --out repo.txt
 
 # Tree + Content in JSONL
+
 fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.jsonl
 
 
 
 ---
 
-# 🟧 **HEADER 9 — Installation**
-
 ## Installation
 
-### Option 1 — JAR  
-Download `fastfilescrape.jar` and add it to your classpath.
+### Option 1: Maven (Recommended)
 
-### Option 2 — Maven (JitPack)
+Add the JitPack repository and the dependencies to your `pom.xml`:
 
 ```xml
 <repositories>
@@ -89,7 +89,6 @@ Download `fastfilescrape.jar` and add it to your classpath.
         <url>https://jitpack.io</url>
     </repository>
 </repositories>
-
 <dependencies>
    <dependency>
        <groupId>com.github.andrestubbe</groupId>
@@ -97,51 +96,78 @@ Download `fastfilescrape.jar` and add it to your classpath.
        <version>v0.1.0</version>
    </dependency>
 </dependencies>
+```
 
+### Option 2: Gradle (via JitPack)
 
-public class Demo {
-    public static void main(String[] args) throws Exception {
-
-        // Tree
-        var tcfg = new FastFileTree.Config();
-        tcfg.root = Path.of(".");
-        var tree = FastFileTree.build(tcfg);
-        FastFileTree.printTree(tree, System.out);
-
-        // Content
-        var ccfg = new FastFileScrapeContent.Config();
-        ccfg.root = Path.of(".");
-        ccfg.includeGlobs = List.of("**/*.java");
-
-        FastFileScrapeContent.scrape(ccfg, (file, chunk, text) -> {
-            System.out.println("=== " + file + " (chunk " + chunk + ") ===");
-            System.out.println(text);
-        });
-    }
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
 }
-API Reference
-FastFileTree
-Method	Description
-Node build(Config cfg)	Builds the directory tree
-printTree(Node, Appendable)	Prints ASCII tree
+dependencies {
+    implementation 'com.github.andrestubbe:fastfilescrape:v0.1.0'
+}
+```
 
+### Option 3: Direct Download (No Build Tool)
 
-FastFileScrapeContent
-Method	Description
-scrape(Config cfg, Sink sink)	Reads files and emits chunks
+Download the latest JARs directly to add them to your classpath:
 
+1. 📦 *
+   *[fastfilescrape-v0.1.0.jar](https://github.com/andrestubbe/FastFileIndex/releases/download/v0.1.0/fastfilescrape-v0.1.0.jar)
+   ** (The Core Library)
 
-Roadmap
-See ROADMAP.md.
+---
 
-License
-MIT License.
+## API Reference
 
-Part of the FastJava Ecosystem
-FastFileScrape complements:
+### FastFileTree
 
-FastFileIndex
+| Method                        | Description               |
+|-------------------------------|---------------------------|
+| `Node build(Config cfg)`      | Builds the directory tree |
+| `printTree(Node, Appendable)` | Prints ASCII tree         |
 
-FastFileSearch
+### FastFileScrapeContent
 
-FastFileWatch
+| Method                          | Description                  |
+|---------------------------------|------------------------------|
+| `scrape(Config cfg, Sink sink)` | Reads files and emits chunks |
+
+---
+
+## Documentation
+
+* **[COMPILE.md](COMPILE.md)**: Full compilation guide (MSVC C++17 build chain + JNI Setup).
+* **[REFERENCE.md](REFERENCE.md)**: Full API descriptions, border configurations, and codepoint index.
+* **[PHILOSOPHIE.md](PHILOSOPHIE.md)**: The engineering rationale for zero-allocation performance.
+* **[ROADMAP.md](ROADMAP.md)**: Future milestones and planned features.
+
+---
+
+## Platform Support
+
+| Platform      | Status            |
+|---------------|-------------------|
+| Windows 10/11 | ✅ Fully Supported |
+| Linux         | 🚧 Planned        |
+| macOS         | 🚧 Planned        |
+
+---
+
+## License
+
+MIT License — See [LICENSE](LICENSE) file for details.
+
+---
+
+## Related Projects
+
+- [FastFileIndex](https://github.com/andrestubbe/FastFileIndex) - Binary file indexing with mmap support
+- [FastFileSearch](https://github.com/andrestubbe/FastFileSearch) - Prefix Trie, N-Gram index, and Ranking engine
+- [FastFileWatch](https://github.com/andrestubbe/FastFileWatch) - USN Journal-based live file monitoring
+- [FastCore](https://github.com/andrestubbe/FastCore) - Unified JNI loader and platform abstraction
+
+---
+
+**Part of the FastJava Ecosystem** — *Making the JVM faster. Small package. Maximum speed. Zero bloat. 🚀📋*
