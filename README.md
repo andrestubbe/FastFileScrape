@@ -6,6 +6,8 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010+-lightgrey.svg)]()
 [![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe)
 
+**⚡ Scrape and process millions of files in milliseconds with zero latency.**
+
 FastFileScrape is the high‑speed file scraping module of the FastJava ecosystem.  
 It provides two core capabilities:
 
