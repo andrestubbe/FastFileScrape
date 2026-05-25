@@ -60,20 +60,19 @@ It provides two core capabilities:
 
 ## Quick Start
 
+```pash
 # Show directory tree
-
 fastfilescrape tree --root . --include "**/*.java"
 
 # Extract file contents
-
 fastfilescrape content --root . --include "**/*.java" --out repo.txt
 
 # Tree + Content in JSONL
-
 fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.jsonl
-
+```
 
 ---
+
 ## Demo (Java)
 
 ```java
@@ -110,6 +109,7 @@ public class Demo {
 Add the JitPack repository and the dependencies to your `pom.xml`:
 
 ```xml
+
 <repositories>
     <repository>
         <id>jitpack.io</id>
@@ -117,11 +117,11 @@ Add the JitPack repository and the dependencies to your `pom.xml`:
     </repository>
 </repositories>
 <dependencies>
-   <dependency>
-       <groupId>com.github.andrestubbe</groupId>
-       <artifactId>fastfilescrape</artifactId>
-       <version>v0.1.0</version>
-   </dependency>
+<dependency>
+    <groupId>com.github.andrestubbe</groupId>
+    <artifactId>fastfilescrape</artifactId>
+    <version>v0.1.0</version>
+</dependency>
 </dependencies>
 ```
 
@@ -149,14 +149,16 @@ Download the latest JARs directly to add them to your classpath:
 ## API Reference
 
 ### FastFileTree
-| Method | Description |
-|--------|-------------|
-| `Node build(Config cfg)` | Builds the directory tree |
-| `printTree(Node, Appendable)` | Prints ASCII tree |
+
+| Method                        | Description               |
+|-------------------------------|---------------------------|
+| `Node build(Config cfg)`      | Builds the directory tree |
+| `printTree(Node, Appendable)` | Prints ASCII tree         |
 
 ### FastFileScrapeContent
-| Method | Description |
-|--------|-------------|
+
+| Method                          | Description                  |
+|---------------------------------|------------------------------|
 | `scrape(Config cfg, Sink sink)` | Reads files and emits chunks |
 
 ---
