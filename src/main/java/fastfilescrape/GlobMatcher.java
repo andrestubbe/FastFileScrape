@@ -29,9 +29,14 @@ final class GlobMatcher {
 
     boolean matchesDir(Path dir) {
         Path r = rel(dir);
+
+        // If excluded → skip whole subtree
         if (isExcluded(r)) return false;
-        return true; // dirs nur über exclude steuern
+
+        // Directories are always allowed unless excluded
+        return true;
     }
+
 
     boolean matchesFile(Path file) {
         Path r = rel(file);
@@ -46,7 +51,13 @@ final class GlobMatcher {
     private boolean isExcluded(Path r) {
         for (PathMatcher m : excludes) {
             if (m.matches(r)) return true;
+
+            // also check prefix match for directory patterns like ".git/**"
+            if (r.toString().startsWith(m.toString().replace("glob:", "").replace("/**", ""))) {
+                return true;
+            }
         }
         return false;
     }
+
 }

@@ -65,9 +65,21 @@ public final class FastFileTree {
             }
         });
 
+        pruneEmptyDirs(rootNode);
         sortTree(rootNode);
         return rootNode;
     }
+
+    private static boolean pruneEmptyDirs(Node node) {
+        if (!node.isDirectory) {
+            return false; // files are never pruned
+        }
+
+        node.children.removeIf(FastFileTree::pruneEmptyDirs);
+
+        return node.children.isEmpty();
+    }
+
 
     private static void sortTree(Node node) {
         node.children.sort((a, b) -> {
