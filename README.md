@@ -1,10 +1,11 @@
 # FastFileScrape v0.1.0 [ALPHA] — Ultra‑Fast File Tree & Content Scraper for Java
 
-[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen.svg)](https://github.com/andrestubbe/FastFileIndex/releases/tag/v0.1.0)
+[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen.svg)](https://github.com/andrestubbe/FastFileScrape/releases/tag/v0.1.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.java.com)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010+-lightgrey.svg)]()
-[![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe)
+[![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe/FastFileScrape)
+
 
 **⚡ Scrape and process millions of files in milliseconds with zero latency.**
 
@@ -21,8 +22,12 @@ It provides two core capabilities:
 ## Table of Contents
 
 - [Key Features](#key-features)
-- [TODO](#key-features)
-
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Demo (Java)](#demo-java)
+- [API Reference](#api-reference)
+- [Roadmap](#roadmap)
+- [License](#license)
 
 ---
 
