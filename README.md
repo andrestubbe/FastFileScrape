@@ -73,6 +73,33 @@ fastfilescrape content --root . --include "**/*.java" --out repo.txt
 fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.jsonl
 
 
+---
+## Demo (Java)
+
+```java
+import fastfilescrape.*;
+
+public class Demo {
+    public static void main(String[] args) throws Exception {
+
+        // Tree
+        var tcfg = new FastFileTree.Config();
+        tcfg.root = Path.of(".");
+        var tree = FastFileTree.build(tcfg);
+        FastFileTree.printTree(tree, System.out);
+
+        // Content
+        var ccfg = new FastFileScrapeContent.Config();
+        ccfg.root = Path.of(".");
+        ccfg.includeGlobs = List.of("**/*.java");
+
+        FastFileScrapeContent.scrape(ccfg, (file, chunk, text) -> {
+            System.out.println("=== " + file + " (chunk " + chunk + ") ===");
+            System.out.println(text);
+        });
+    }
+}
+```
 
 ---
 
@@ -122,16 +149,14 @@ Download the latest JARs directly to add them to your classpath:
 ## API Reference
 
 ### FastFileTree
-
-| Method                        | Description               |
-|-------------------------------|---------------------------|
-| `Node build(Config cfg)`      | Builds the directory tree |
-| `printTree(Node, Appendable)` | Prints ASCII tree         |
+| Method | Description |
+|--------|-------------|
+| `Node build(Config cfg)` | Builds the directory tree |
+| `printTree(Node, Appendable)` | Prints ASCII tree |
 
 ### FastFileScrapeContent
-
-| Method                          | Description                  |
-|---------------------------------|------------------------------|
+| Method | Description |
+|--------|-------------|
 | `scrape(Config cfg, Sink sink)` | Reads files and emits chunks |
 
 ---
