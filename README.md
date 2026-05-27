@@ -14,7 +14,7 @@ It provides two core capabilities:
 - **FastFileTree** — build complete directory trees with include/exclude rules
 - **FastFileScrapeContent** — extract file contents with chunking for LLMs and agents
 
-[![FastFileIndex Showcase](docs/screenshot.png)](https://www.youtube.com/watch?v=BZsqQl7WqWk)
+[![FastFileScrape Showcase](docs/screenshot.png)](https://youtu.be/3yPRjiXqpaY)
 
 ---
 
@@ -117,11 +117,21 @@ Add the JitPack repository and the dependencies to your `pom.xml`:
     </repository>
 </repositories>
 <dependencies>
-<dependency>
-    <groupId>com.github.andrestubbe</groupId>
-    <artifactId>fastfilescrape</artifactId>
-    <version>v0.1.0</version>
-</dependency>
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastFileScrape</artifactId>
+        <version>v0.1.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastGLOB</artifactId>
+        <version>v0.1.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastCore</artifactId>
+        <version>v1.0.0</version>
+    </dependency>
 </dependencies>
 ```
 
@@ -132,7 +142,9 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.andrestubbe:fastfilescrape:v0.1.0'
+    implementation 'com.github.andrestubbe:FastFileScrape:v0.1.0'
+    implementation 'com.github.andrestubbe:FastGLOB:v0.1.0'
+    implementation 'com.github.andrestubbe:FastCore:v1.0.0'
 }
 ```
 

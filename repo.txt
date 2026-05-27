@@ -1,0 +1,856 @@
+TREE:
+├── examples
+│   ├── Benchmark
+│   │   └── src
+│   │       └── main
+│   │           └── java
+│   │               └── fastfilescrape
+│   │                   └── Benchmark.java (8512 bytes)
+│   └── Demo
+│       └── src
+│           └── main
+│               └── java
+│                   └── fastfilescrape
+│                       └── Demo.java (1915 bytes)
+└── src
+    └── main
+        └── java
+            └── fastfilescrape
+                ├── Chunker.java (1151 bytes)
+                ├── FastFileScrapeCli.java (10968 bytes)
+                ├── FastFileScrapeContent.java (3960 bytes)
+                └── FastFileTree.java (5866 bytes)
+
+========================================================================
+FILE: src\main\java\fastfilescrape\Chunker.java  [chunk 0]
+========================================================================
+package fastfilescrape;
+
+final class Chunker {
+
+    private Chunker() {}
+
+    static void chunk(CharSequence content, int maxBytes, ChunkSink sink) {
+        int len = content.length();
+        int start = 0;
+        int chunkIndex = 0;
+
+        while (start < len) {
+            int end = approximateEnd(content, start, maxBytes);
+            sink.onChunk(chunkIndex++, content.subSequence(start, end));
+            start = end;
+        }
+    }
+
+    private static int approximateEnd(CharSequence s, int start, int maxBytes) {
+        int len = s.length();
+        int bytes = 0;
+        int i = start;
+        int lastNewline = -1;
+
+        while (i < len && bytes <= maxBytes) {
+            char c = s.charAt(i);
+            bytes += (c <= 0x7F) ? 1 : (c <= 0x7FF ? 2 : 3);
+            if (c == '\n') lastNewline = i;
+            if (bytes > maxBytes) break;
+            i++;
+        }
+
+        if (lastNewline > start + 100) {
+            return lastNewline + 1;
+        }
+        return Math.min(i, len);
+    }
+
+    interface ChunkSink {
+        void onChunk(int chunkIndex, CharSequence chunk);
+    }
+}
+
+========================================================================
+FILE: src\main\java\fastfilescrape\FastFileScrapeContent.java  [chunk 0]
+========================================================================
+package fastfilescrape;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
+
+public final class FastFileScrapeContent {
+
+    public static final class Config {
+        public Path root;
+        public List<String> includeGlobs = List.of("**/*.java", "**/*.cpp");
+        public List<String> excludeGlobs = List.of(".git/**", "build/**", "out/**");
+        public int maxChunkBytes = 64_000;
+        public long maxFileSizeBytes = 5_000_000;
+        public Charset charset = StandardCharsets.UTF_8;
+    }
+
+    public interface Sink {
+        void onChunk(Path file, int chunkIndex, CharSequence content) throws IOException;
+    }
+
+    public static void scrape(Config cfg, Sink sink) throws IOException {
+        Objects.requireNonNull(cfg.root, "root");
+
+        // 1. native traverse and filter via FastGLOB
+        Set<String> allRelativePaths = new LinkedHashSet<>();
+        for (String includeGlob : cfg.includeGlobs) {
+            String[] matches = fastglob.FastGLOB.glob(cfg.root.toString(), includeGlob);
+            if (matches != null) {
+                allRelativePaths.addAll(Arrays.asList(matches));
+            }
+        }
+
+        // 2. Setup exclude matchers
+        FileSystem fs = FileSystems.getDefault();
+        List<PathMatcher> excludeMatchers = new ArrayList<>();
+        List<String> cleanExcludes = new ArrayList<>();
+        List<String> fastExcludes = new ArrayList<>();
+        for (String excludeGlob : cfg.excludeGlobs) {
+            excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
+            cleanExcludes.add(excludeGlob.replace("glob:", "").replace("/**", ""));
+            
+            String clean = excludeGlob.replace("**/", "").replace("/**", "");
+            if (!clean.isEmpty()) {
+                fastExcludes.add(clean);
+            }
+        }
+
+        // 3. Process matches natively and in parallel
+        allRelativePaths.parallelStream().forEach(relStr -> {
+            Path relPath = Paths.get(relStr);
+
+            // Check exclusions
+            boolean excluded = false;
+            
+            // Fast-path simple string contains (orders of magnitude faster than regex PathMatcher)
+            for (String fastEx : fastExcludes) {
+                if (relStr.contains("/" + fastEx + "/") || relStr.startsWith(fastEx + "/")) {
+                    excluded = true;
+                    break;
+                }
+            }
+            
+            if (!excluded) {
+                for (int k = 0; k < excludeMatchers.size(); k++) {
+                    PathMatcher matcher = excludeMatchers.get(k);
+                    if (matcher.matches(relPath)) {
+                        excluded = true;
+                        break;
+                    }
+                    String cleanExclude = cleanExcludes.get(k);
+                    if (relStr.startsWith(cleanExclude)) {
+                        excluded = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!excluded) {
+                Path absolutePath = cfg.root.resolve(relPath);
+                try {
+                    long size = absolutePath.toFile().length();
+                    if (size <= cfg.maxFileSizeBytes) {
+                        String content = new String(Files.readAllBytes(absolutePath), cfg.charset);
+                        Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
+                            try {
+                                sink.onChunk(absolutePath, chunkIndex, chunk);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    }
+                } catch (IOException e) {
+                    // Ignore missing or inaccessible files
+                }
+            }
+        });
+    }
+}
+
+========================================================================
+FILE: examples\Demo\src\main\java\fastfilescrape\Demo.java  [chunk 0]
+========================================================================
+package fastfilescrape;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+/**
+ * Premium Hero Demo for FastFileScrape natively accelerated by FastGLOB.
+ */
+public class Demo {
+    public static void main(String[] args) throws Exception {
+        System.out.println("=== FastFileScrape Natively Accelerated Demo ===");
+        
+        // 1. Build and print the directory tree of FastFileScrape project
+        Path root = Paths.get(".").toAbsolutePath().normalize();
+        System.out.println("Building tree for: " + root);
+        
+        FastFileTree.Config tcfg = new FastFileTree.Config();
+        tcfg.root = root;
+        tcfg.includeGlobs = List.of("src/**/*.java", "pom.xml");
+        tcfg.excludeGlobs = List.of("**/target/**");
+        
+        FastFileTree.Node tree = FastFileTree.build(tcfg);
+        
+        System.out.println("\n--- NATIVE DIRECTORY TREE (Source Files Only) ---");
+        FastFileTree.printTree(tree, System.out);
+        
+        // 2. Scrape and chunk Java file contents
+        System.out.println("\n--- NATIVE FILE CONTENT SCRAPER (First Chunks) ---");
+        FastFileScrapeContent.Config ccfg = new FastFileScrapeContent.Config();
+        ccfg.root = root;
+        ccfg.includeGlobs = List.of("src/main/java/fastfilescrape/Chunker.java");
+        ccfg.maxChunkBytes = 1000; // Small chunks for clean console output
+        
+        FastFileScrapeContent.scrape(ccfg, (file, chunkIndex, content) -> {
+            System.out.printf("📄 File: %s (Chunk #%d)\n", root.relativize(file), chunkIndex);
+            System.out.println("----------------------------------------------------------------");
+            System.out.println(content);
+            System.out.println("----------------------------------------------------------------\n");
+        });
+        
+        System.out.println("=== Demo Complete ===");
+    }
+}
+
+========================================================================
+FILE: src\main\java\fastfilescrape\FastFileTree.java  [chunk 0]
+========================================================================
+package fastfilescrape;
+
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.*;
+
+public final class FastFileTree {
+
+    public static final class Node {
+        public final Path path;
+        public final boolean isDirectory;
+        public final long sizeBytes;
+        public final List<Node> children = new ArrayList<>();
+
+        public Node(Path path, boolean isDirectory, long sizeBytes) {
+            this.path = path;
+            this.isDirectory = isDirectory;
+            this.sizeBytes = sizeBytes;
+        }
+    }
+
+    public static final class Config {
+        public Path root;
+        public List<String> includeGlobs = List.of("**/*");
+        public List<String> excludeGlobs = List.of();
+    }
+
+    public static Node build(Config cfg) throws IOException {
+        Objects.requireNonNull(cfg.root, "root");
+
+        // 1. native traverse and filter via FastGLOB
+        Set<String> allRelativePaths = new LinkedHashSet<>();
+        for (String includeGlob : cfg.includeGlobs) {
+            String[] matches = fastglob.FastGLOB.glob(cfg.root.toString(), includeGlob);
+            if (matches != null) {
+                allRelativePaths.addAll(Arrays.asList(matches));
+            }
+        }
+
+        // 2. Setup exclude matchers
+        FileSystem fs = FileSystems.getDefault();
+        List<PathMatcher> excludeMatchers = new ArrayList<>();
+        List<String> cleanExcludes = new ArrayList<>();
+        List<String> fastExcludes = new ArrayList<>();
+        for (String excludeGlob : cfg.excludeGlobs) {
+            excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
+            cleanExcludes.add(excludeGlob.replace("glob:", "").replace("/**", ""));
+            
+            String clean = excludeGlob.replace("**/", "").replace("/**", "");
+            if (!clean.isEmpty()) {
+                fastExcludes.add(clean);
+            }
+        }
+
+        Node rootNode = new Node(cfg.root, true, 0L);
+
+        // 3. Build tree structure from flat matched files
+        for (String relStr : allRelativePaths) {
+            Path relPath = Paths.get(relStr);
+
+            // Check exclusions
+            boolean excluded = false;
+            
+            // Fast-path simple string contains (orders of magnitude faster than regex PathMatcher)
+            for (String fastEx : fastExcludes) {
+                if (relStr.contains("/" + fastEx + "/") || relStr.startsWith(fastEx + "/")) {
+                    excluded = true;
+                    break;
+                }
+            }
+            
+            if (!excluded) {
+                for (int k = 0; k < excludeMatchers.size(); k++) {
+                    PathMatcher matcher = excludeMatchers.get(k);
+                    if (matcher.matches(relPath)) {
+                        excluded = true;
+                        break;
+                    }
+                    String cleanExclude = cleanExcludes.get(k);
+                    if (relStr.startsWith(cleanExclude)) {
+                        excluded = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (excluded) {
+                continue;
+            }
+
+            Path currentPath = cfg.root;
+            Node currentNode = rootNode;
+
+            for (int i = 0; i < relPath.getNameCount(); i++) {
+                Path part = relPath.getName(i);
+                currentPath = currentPath.resolve(part);
+                boolean isLast = (i == relPath.getNameCount() - 1);
+
+                Node childNode = null;
+                for (Node child : currentNode.children) {
+                    if (child.path.getFileName().equals(part)) {
+                        childNode = child;
+                        break;
+                    }
+                }
+
+                if (childNode == null) {
+                    if (isLast) {
+                        long size = currentPath.toFile().length();
+                        childNode = new Node(currentPath, false, size);
+                    } else {
+                        childNode = new Node(currentPath, true, 0L);
+                    }
+                    currentNode.children.add(childNode);
+                }
+                currentNode = childNode;
+            }
+        }
+
+        pruneEmptyDirs(rootNode);
+        sortTree(rootNode);
+        return rootNode;
+    }
+
+    private static boolean pruneEmptyDirs(Node node) {
+        if (!node.isDirectory) {
+            return false;
+        }
+        node.children.removeIf(FastFileTree::pruneEmptyDirs);
+        return node.children.isEmpty();
+    }
+
+    private static void sortTree(Node node) {
+        node.children.sort((a, b) -> {
+            if (a.isDirectory && !b.isDirectory) return -1;
+            if (!a.isDirectory && b.isDirectory) return 1;
+            return a.path.getFileName().toString().compareToIgnoreCase(b.path.getFileName().toString());
+        });
+        for (Node c : node.children) {
+            if (c.isDirectory) sortTree(c);
+        }
+    }
+
+    public static void printTree(Node node, Appendable out) throws IOException {
+        printTree(node, out, "", true, true);
+    }
+
+    private static void printTree(Node node, Appendable out, String prefix, boolean isLast, boolean isRoot) throws IOException {
+        if (!isRoot) {
+            out.append(prefix);
+            out.append(isLast ? "└── " : "├── ");
+            out.append(node.path.getFileName().toString());
+            if (!node.isDirectory) {
+                out.append(" (").append(String.valueOf(node.sizeBytes)).append(" bytes)");
+            }
+            out.append('\n');
+            prefix += isLast ? "    " : "│   ";
+        }
+        for (int i = 0; i < node.children.size(); i++) {
+            Node c = node.children.get(i);
+            printTree(c, out, prefix, i == node.children.size() - 1, false);
+        }
+    }
+}
+
+========================================================================
+FILE: examples\Benchmark\src\main\java\fastfilescrape\Benchmark.java  [chunk 0]
+========================================================================
+package fastfilescrape;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Performance Benchmark comparing FastFileScrape (natively accelerated by FastGLOB)
+ * against standard Java NIO directory traversal and file matching.
+ */
+public class Benchmark {
+    public static void main(String[] args) throws Exception {
+        System.out.println("=== FastFileScrape Performance Benchmark ===");
+        
+        // Go up to the workspace root to scrape a large number of projects
+        Path searchRoot = Paths.get("..").toAbsolutePath().normalize();
+        List<String> includeGlobs = List.of("**/*.java");
+        List<String> excludeGlobs = List.of("**/target/**", "**/.git/**", "**/.idea/**");
+        
+        System.out.println("Scraping root: " + searchRoot);
+        
+        // Warmup
+        for (int i = 0; i < 3; i++) {
+            runJavaScraper(searchRoot, includeGlobs, excludeGlobs);
+            runFastFileScraper(searchRoot, includeGlobs, excludeGlobs);
+        }
+        
+        int runs = 5;
+        System.out.println("\nRunning " + runs + " iterations...");
+        
+        // 1. Benchmark Standard Java
+        long startJava = System.nanoTime();
+        int javaChunks = 0;
+        for (int i = 0; i < runs; i++) {
+            javaChunks = runJavaScraper(searchRoot, includeGlobs, excludeGlobs);
+        }
+        long javaTimeMs = (System.nanoTime() - startJava) / 1_000_000 / runs;
+        
+        // 2. Benchmark FastFileScrape (Native)
+        long startNative = System.nanoTime();
+        int nativeChunks = 0;
+        for (int i = 0; i < runs; i++) {
+            nativeChunks = runFastFileScraper(searchRoot, includeGlobs, excludeGlobs);
+        }
+        long nativeTimeMs = (System.nanoTime() - startNative) / 1_000_000 / runs;
+        
+        System.out.println("\n=== Results ===");
+        System.out.println("Standard Java Scraped Chunks: " + javaChunks + " in " + javaTimeMs + " ms (avg)");
+        System.out.println("FastFileScrape Scraped Chunks: " + nativeChunks + " in " + nativeTimeMs + " ms (avg)");
+        
+        if (nativeTimeMs > 0) {
+            float speedup = (float) javaTimeMs / nativeTimeMs;
+            System.out.printf("Speedup:                     %.2fx faster! 🚀\n", speedup);
+        } else {
+            System.out.println("Speedup:                     Infinite (Native was too fast to measure) 🚀");
+        }
+    }
+    
+    private static int runJavaScraper(Path root, List<String> includeGlobs, List<String> excludeGlobs) throws IOException {
+        FileSystem fs = FileSystems.getDefault();
+        List<PathMatcher> includes = new ArrayList<>();
+        List<PathMatcher> excludes = new ArrayList<>();
+        for (String g : includeGlobs) includes.add(fs.getPathMatcher("glob:" + g));
+        for (String g : excludeGlobs) excludes.add(fs.getPathMatcher("glob:" + g));
+        
+        final int[] chunkCount = {0};
+        
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                Path r = root.relativize(dir);
+                for (PathMatcher m : excludes) {
+                    if (m.matches(r) || r.toString().startsWith(m.toString().replace("glob:", "").replace("/**", ""))) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                }
+                return FileVisitResult.CONTINUE;
+            }
+            
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Path r = root.relativize(file);
+                for (PathMatcher m : excludes) {
+                    if (m.matches(r)) return FileVisitResult.CONTINUE;
+                }
+                boolean matched = false;
+                for (PathMatcher m : includes) {
+                    if (m.matches(r)) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (matched && attrs.size() <= 5_000_000) {
+                    String content = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                    // Mock chunking
+                    Chunker.chunk(content, 64000, (chunkIndex, chunk) -> {
+                        chunkCount[0]++;
+                    });
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        return chunkCount[0];
+    }
+    
+    private static int runFastFileScraper(Path root, List<String> includeGlobs, List<String> excludeGlobs) throws IOException {
+        long t0 = System.nanoTime();
+        FastFileScrapeContent.Config cfg = new FastFileScrapeContent.Config();
+        cfg.root = root;
+        cfg.includeGlobs = includeGlobs;
+        cfg.excludeGlobs = excludeGlobs;
+        cfg.maxChunkBytes = 64000;
+        cfg.maxFileSizeBytes = 5_000_000;
+        
+        final AtomicInteger chunkCount = new AtomicInteger(0);
+        
+        long tStart = System.nanoTime();
+        // Step 1: Native glob JNI call
+        Set<String> allRelativePaths = new LinkedHashSet<>();
+        for (String includeGlob : cfg.includeGlobs) {
+            String[] matches = fastglob.FastGLOB.glob(cfg.root.toString(), includeGlob);
+            if (matches != null) {
+                allRelativePaths.addAll(Arrays.asList(matches));
+            }
+        }
+        long tJni = System.nanoTime() - tStart;
+        
+        long tFilterStart = System.nanoTime();
+        // Setup exclude matchers
+        FileSystem fs = FileSystems.getDefault();
+        List<PathMatcher> excludeMatchers = new ArrayList<>();
+        List<String> cleanExcludes = new ArrayList<>();
+        List<String> fastExcludes = new ArrayList<>();
+        for (String excludeGlob : cfg.excludeGlobs) {
+            excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
+            cleanExcludes.add(excludeGlob.replace("glob:", "").replace("/**", ""));
+            
+            String clean = excludeGlob.replace("**/", "").replace("/**", "");
+            if (!clean.isEmpty()) {
+                fastExcludes.add(clean);
+            }
+        }
+        long tFilter = System.nanoTime() - tFilterStart;
+        
+        long tReadStart = System.nanoTime();
+        allRelativePaths.parallelStream().forEach(relStr -> {
+            Path relPath = Paths.get(relStr);
+            
+            // Check exclusions
+            boolean excluded = false;
+            for (String fastEx : fastExcludes) {
+                if (relStr.contains("/" + fastEx + "/") || relStr.startsWith(fastEx + "/")) {
+                    excluded = true;
+                    break;
+                }
+            }
+            
+            if (!excluded) {
+                for (int k = 0; k < excludeMatchers.size(); k++) {
+                    PathMatcher matcher = excludeMatchers.get(k);
+                    if (matcher.matches(relPath)) {
+                        excluded = true;
+                        break;
+                    }
+                    String cleanExclude = cleanExcludes.get(k);
+                    if (relStr.startsWith(cleanExclude)) {
+                        excluded = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!excluded) {
+                Path absolutePath = cfg.root.resolve(relPath);
+                try {
+                    long size = absolutePath.toFile().length();
+                    if (size <= cfg.maxFileSizeBytes) {
+                        String content = new String(Files.readAllBytes(absolutePath), cfg.charset);
+                        Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
+                            chunkCount.incrementAndGet();
+                        });
+                    }
+                } catch (IOException e) {
+                    // Ignore missing or inaccessible files
+                }
+            }
+        });
+        long tRead = System.nanoTime() - tReadStart;
+        
+        System.out.printf("  [Telemetry] JNI: %.2f ms | Filter Setup: %.2f ms | Read/Chunk: %.2f ms | Total: %.2f ms\n",
+            tJni / 1_000_000.0, tFilter / 1_000_000.0, tRead / 1_000_000.0, (System.nanoTime() - t0) / 1_000_000.0);
+            
+        return chunkCount.get();
+    }
+}
+
+========================================================================
+FILE: src\main\java\fastfilescrape\FastFileScrapeCli.java  [chunk 0]
+========================================================================
+package fastfilescrape;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
+
+public final class FastFileScrapeCli {
+
+    private enum Mode { TREE, CONTENT, ALL }
+    private enum Format { TEXT, JSONL }
+
+    public static void main(String[] args) throws Exception {
+        if (args.length == 0 || hasArg(args, "--help", "-h")) {
+            printHelp();
+            return;
+        }
+
+        long startTime = System.nanoTime();
+
+        Mode mode = parseMode(args);
+        Path root = Paths.get(getArgValue(args, "--root", "."));
+        List<String> includes = getMulti(args, "--include");
+        
+        String extValue = getArgValue(args, "--ext", null);
+        if (extValue != null) {
+            for (String ext : extValue.split(",")) {
+                includes.add("**/*." + ext.trim());
+            }
+        }
+        if (includes.isEmpty()) includes = List.of("**/*.java", "**/*.cpp");
+
+        List<String> excludes = getMulti(args, "--exclude");
+        String outPath = getArgValue(args, "--out", "-");
+        Format format = "jsonl".equalsIgnoreCase(getArgValue(args, "--format", "text"))
+                ? Format.JSONL : Format.TEXT;
+
+        int maxChunkBytes = Integer.parseInt(getArgValue(args, "--max-chunk-bytes", "64000"));
+        long maxFileSize = Long.parseLong(getArgValue(args, "--max-file-size", "5000000"));
+        boolean showStats = hasArg(args, "--stats");
+        boolean pretty = hasArg(args, "--pretty", "--prettyjson");
+
+        Writer out = "-".equals(outPath)
+                ? new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))
+                : Files.newBufferedWriter(Paths.get(outPath), StandardCharsets.UTF_8);
+
+        Set<Path> uniqueFiles = new HashSet<>();
+        final int[] chunkCount = {0};
+        final long[] totalBytes = {0};
+
+        try (out) {
+            if (mode == Mode.TREE || mode == Mode.ALL) {
+                FastFileTree.Config tcfg = new FastFileTree.Config();
+                tcfg.root = root;
+                tcfg.includeGlobs = includes;
+                tcfg.excludeGlobs = excludes;
+
+                FastFileTree.Node tree = FastFileTree.build(tcfg);
+                // --pretty always means human-readable: ASCII tree, real newlines
+                if (pretty || format == Format.TEXT) {
+                    out.write("TREE:\n");
+                    FastFileTree.printTree(tree, out);
+                    out.write("\n");
+                } else {
+                    writeTreeJson(tree, out);
+                }
+            }
+
+            if (mode == Mode.CONTENT || mode == Mode.ALL) {
+                FastFileScrapeContent.Config ccfg = new FastFileScrapeContent.Config();
+                ccfg.root = root;
+                ccfg.includeGlobs = includes;
+                ccfg.excludeGlobs = excludes;
+                ccfg.maxChunkBytes = maxChunkBytes;
+                ccfg.maxFileSizeBytes = maxFileSize;
+
+                // --pretty always means human-readable text, overrides --format jsonl
+                if (pretty || format == Format.TEXT) {
+                    FastFileScrapeContent.scrape(ccfg, (file, chunkIndex, content) -> {
+                        synchronized (out) {
+                            uniqueFiles.add(file);
+                            chunkCount[0]++;
+                            totalBytes[0] += content.length();
+
+                            String sep = "=".repeat(72);
+                            out.write(sep + "\n");
+                            out.write("FILE: " + root.relativize(file) + "  [chunk " + chunkIndex + "]\n");
+                            out.write(sep + "\n");
+                            out.write(content.toString());
+                            out.write("\n");
+                        }
+                    });
+                } else {
+                    FastFileScrapeContent.scrape(ccfg, (file, chunkIndex, content) -> {
+                        synchronized (out) {
+                            uniqueFiles.add(file);
+                            chunkCount[0]++;
+                            totalBytes[0] += content.length();
+
+                            out.write(toJsonLine(root.relativize(file).toString(), chunkIndex, content.toString()));
+                            out.write("\n");
+                        }
+                    });
+                }
+            }
+        }
+
+        if (showStats) {
+            long elapsedMs = (System.nanoTime() - startTime) / 1_000_000;
+            double mbProcessed = totalBytes[0] / (1024.0 * 1024.0);
+            double speed = elapsedMs > 0 ? (mbProcessed / (elapsedMs / 1000.0)) : 0.0;
+            
+            System.err.println("⚡ [FastFileScrape Stats]");
+            System.err.printf("📁 Files processed:   %d\n", uniqueFiles.size());
+            System.err.printf("🧩 Chunks generated:  %d\n", chunkCount[0]);
+            System.err.printf("💾 Total data read:   %.2f MB\n", mbProcessed);
+            System.err.printf("⏱️ Time elapsed:      %d ms\n", elapsedMs);
+            if (speed > 0) {
+                System.err.printf("🚀 Performance:       %.2f MB/s\n", speed);
+            }
+            System.err.println();
+        }
+    }
+
+    private static void printHelp() {
+        System.out.println("""
+            fastfilescrape [mode] --root <path> [options]
+
+            Modes:
+              tree              Structure-only file tree
+              content           File contents only
+              all               Tree + contents
+
+            Options:
+              --root <path>                 Start directory (default: .)
+              --include <glob>              Include pattern (repeatable)
+              --exclude <glob>              Exclude pattern (repeatable)
+              --ext <ext1,ext2>             Include extension shorthand (comma separated)
+              --out <file|->                Output file or - for stdout (default: -)
+              --format <text|jsonl>         Output format (default: text)
+              --max-chunk-bytes <int>       Chunk size in bytes (default: 64000)
+              --max-file-size <long>        Max file size in bytes (default: 5000000)
+              --stats                       Show execution metrics to stderr
+              --pretty                      Human-readable output: ASCII tree + real file content (overrides --format jsonl)
+
+            Examples:
+              fastfilescrape tree --root . --ext java,cpp --stats
+              fastfilescrape content --root . --ext java --out repo.txt --stats
+              fastfilescrape all --root . --ext java,cpp --format jsonl --pretty --out repo.jsonl
+            """);
+    }
+
+
+    private static Mode parseMode(String[] args) {
+        if (args.length == 0) return Mode.ALL;
+        String m = args[0].toLowerCase(Locale.ROOT);
+        return switch (m) {
+            case "tree" -> Mode.TREE;
+            case "content" -> Mode.CONTENT;
+            case "all" -> Mode.ALL;
+            default -> Mode.ALL;
+        };
+    }
+
+    private static boolean hasArg(String[] args, String... keys) {
+        for (String a : args) {
+            for (String k : keys) {
+                if (a.equals(k)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static String getArgValue(String[] args, String key, String def) {
+        for (int i = 0; i < args.length - 1; i++) {
+            if (args[i].equals(key)) return args[i + 1];
+        }
+        return def;
+    }
+
+    private static List<String> getMulti(String[] args, String key) {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < args.length - 1; i++) {
+            if (args[i].equals(key)) {
+                list.add(args[i + 1]);
+            }
+        }
+        return list;
+    }
+
+    private static String escapeJson(String s) {
+        StringBuilder sb = new StringBuilder(s.length() + 16);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '"' -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> {
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String toJsonLine(String path, int chunkIndex, String content) {
+        return "{\"path\":\"" + escapeJson(path) + "\"," +
+               "\"chunk\":" + chunkIndex + "," +
+               "\"content\":\"" + escapeJson(content) + "\"}";
+    }
+
+    private static String toPrettyJsonLine(String path, int chunkIndex, String content) {
+        return "{\n" +
+               "  \"path\": \"" + escapeJson(path) + "\",\n" +
+               "  \"chunk\": " + chunkIndex + ",\n" +
+               "  \"content\": \"" + escapeJson(content) + "\"\n" +
+               "}";
+    }
+
+    private static void writeTreeJson(FastFileTree.Node node, Appendable out) throws IOException {
+        out.append("{");
+        out.append("\"path\":\"").append(escapeJson(node.path.toString().replace("\\", "/"))).append("\",");
+        out.append("\"dir\":").append(String.valueOf(node.isDirectory)).append(",");
+        out.append("\"size\":").append(String.valueOf(node.sizeBytes)).append(",");
+        out.append("\"children\":[");
+        for (int i = 0; i < node.children.size(); i++) {
+            if (i > 0) out.append(",");
+            writeTreeJson(node.children.get(i), out);
+        }
+        out.append("]}");
+    }
+
+    private static String toPrettyTreeJson(FastFileTree.Node node, String indent) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(indent).append("{\n");
+        sb.append(indent).append("  \"path\": \"").append(escapeJson(node.path.toString().replace("\\", "/"))).append("\",\n");
+        sb.append(indent).append("  \"dir\": ").append(node.isDirectory).append(",\n");
+        sb.append(indent).append("  \"size\": ").append(node.sizeBytes).append(",\n");
+        sb.append(indent).append("  \"children\": [\n");
+        for (int i = 0; i < node.children.size(); i++) {
+            sb.append(toPrettyTreeJson(node.children.get(i), indent + "    "));
+            if (i < node.children.size() - 1) {
+                sb.append(",\n");
+            } else {
+                sb.append("\n");
+            }
+        }
+        sb.append(indent).append("  ]\n");
+        sb.append(indent).append("}");
+        return sb.toString();
+    }
+}
+

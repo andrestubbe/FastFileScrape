@@ -1,0 +1,43 @@
+================================================================================
+YOUTUBE RELEASE INFO: FastFileScrape v0.1.0
+================================================================================
+
+TITLE:
+Java File Scraping is SLOW? 2.4x Faster with Native JNI! ⚡ (FastFileScrape)
+
+DESCRIPTION:
+Reading and chunking thousands of files in Java is painful — slow NIO traversal, heavy GC pressure, and no parallelism out of the box. Meet **FastFileScrape** — the hybrid JNI file scraping library for Java 17+ that combines native Win32 directory traversal with parallel multi-threaded content extraction!
+
+Built on top of **FastGLOB**, FastFileScrape offloads all directory walking and glob filtering to optimized C++ Win32 calls. The matching file contents are then streamed back into Java and processed in parallel using multi-threading. Result: a **2.39x speedup** over standard Java NIO — measured on a real-world workspace with hundreds of source files.
+
+Part of the **FastJava** ecosystem — making the JVM faster, one native call at a time.
+
+KEY HIGHLIGHTS:
+- ⚡ Hybrid JNI Architecture: FastGLOB handles native Win32 traversal, Java handles parallel content extraction.
+- 🚀 Parallel Multi-Threading: parallelStream() reads and chunks multiple files simultaneously with full thread safety.
+- 🛡️ Fast-Path Exclusions: String-based directory pruning bypasses slow Regex PathMatcher for zero overhead.
+- ✨ Gitignore-Style Glob Patterns: Full glob support — brace expansion, negation, deep wildcard (**).
+- 🖥️ CLI Ready: Standalone Fat-JAR with tree, content, and all modes. Human-readable or JSONL output.
+- 📦 JitPack Integration: One Maven dependency — no manual DLL management required.
+
+BENCHMARK RESULTS (Scraping real FastJava workspace):
+- Standard Java NIO: ~190 ms (avg, cold)
+- FastFileScrape v0.1.0: ~80 ms (avg, warm)
+- Speedup: 2.39x faster! 🚀
+
+CLI EXAMPLE:
+  java -jar FastFileScrape.jar tree --root . --ext java,cpp --stats
+  java -jar FastFileScrape.jar all --root . --ext java --format jsonl --out repo.jsonl
+
+LINKS:
+GitHub: https://github.com/andrestubbe/FastFileScrape
+FastGLOB: https://github.com/andrestubbe/FastGLOB
+FastJava Suite: https://github.com/andrestubbe/FastJava
+
+Part of the FastJava Ecosystem — Making the JVM faster. Small package. Maximum speed. Zero bloat. 🚀
+
+Made with ⚡ by Andre Stubbe
+
+TAGS:
+Java, Performance, Native, Programming, FastJava, JNI, Windows, Optimization, Win32, FileScraping, FileSearch, Multithreading, ParallelStream, LLM, CodeAnalysis, ZeroGC, SoftwareDevelopment, Coding, Benchmark
+

@@ -22,7 +22,7 @@ public final class FastFileTree {
     public static final class Config {
         public Path root;
         public List<String> includeGlobs = List.of("**/*");
-        public List<String> excludeGlobs = List.of(".git/**", "build/**", "out/**");
+        public List<String> excludeGlobs = List.of();
     }
 
     public static Node build(Config cfg) throws IOException {
