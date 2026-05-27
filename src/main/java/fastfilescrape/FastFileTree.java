@@ -2,7 +2,6 @@ package fastfilescrape;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 public final class FastFileTree {
@@ -28,42 +27,79 @@ public final class FastFileTree {
 
     public static Node build(Config cfg) throws IOException {
         Objects.requireNonNull(cfg.root, "root");
-        GlobMatcher matcher = new GlobMatcher(cfg.includeGlobs, cfg.excludeGlobs, cfg.root);
+
+        // 1. native traverse and filter via FastGLOB
+        Set<String> allRelativePaths = new LinkedHashSet<>();
+        for (String includeGlob : cfg.includeGlobs) {
+            String[] matches = fastglob.FastGLOB.glob(cfg.root.toString(), includeGlob);
+            if (matches != null) {
+                allRelativePaths.addAll(Arrays.asList(matches));
+            }
+        }
+
+        // 2. Setup exclude matchers
+        FileSystem fs = FileSystems.getDefault();
+        List<PathMatcher> excludeMatchers = new ArrayList<>();
+        for (String excludeGlob : cfg.excludeGlobs) {
+            excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
+        }
 
         Node rootNode = new Node(cfg.root, true, 0L);
-        Map<Path, Node> map = new HashMap<>();
-        map.put(cfg.root.toAbsolutePath().normalize(), rootNode);
 
-        Files.walkFileTree(cfg.root, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                if (!matcher.matchesDir(dir)) {
-                    return FileVisitResult.SKIP_SUBTREE;
+        // 3. Build tree structure from flat matched files
+        for (String relStr : allRelativePaths) {
+            Path relPath = Paths.get(relStr);
+
+            // Check exclusions
+            boolean excluded = false;
+            for (PathMatcher matcher : excludeMatchers) {
+                if (matcher.matches(relPath)) {
+                    excluded = true;
+                    break;
                 }
-                if (!dir.equals(cfg.root)) {
-                    Node parent = map.get(dir.getParent().toAbsolutePath().normalize());
-                    if (parent != null) {
-                        Node node = new Node(dir, true, 0L);
-                        parent.children.add(node);
-                        map.put(dir.toAbsolutePath().normalize(), node);
+                String cleanExclude = matcher.toString().replace("glob:", "").replace("/**", "");
+                if (relStr.startsWith(cleanExclude)) {
+                    excluded = true;
+                    break;
+                }
+            }
+            if (excluded) {
+                continue;
+            }
+
+            Path currentPath = cfg.root;
+            Node currentNode = rootNode;
+
+            for (int i = 0; i < relPath.getNameCount(); i++) {
+                Path part = relPath.getName(i);
+                currentPath = currentPath.resolve(part);
+                boolean isLast = (i == relPath.getNameCount() - 1);
+
+                Node childNode = null;
+                for (Node child : currentNode.children) {
+                    if (child.path.getFileName().equals(part)) {
+                        childNode = child;
+                        break;
                     }
                 }
-                return FileVisitResult.CONTINUE;
-            }
 
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                if (!matcher.matchesFile(file)) {
-                    return FileVisitResult.CONTINUE;
+                if (childNode == null) {
+                    if (isLast) {
+                        long size = 0;
+                        try {
+                            size = Files.size(currentPath);
+                        } catch (IOException e) {
+                            // File might have been deleted or inaccessible
+                        }
+                        childNode = new Node(currentPath, false, size);
+                    } else {
+                        childNode = new Node(currentPath, true, 0L);
+                    }
+                    currentNode.children.add(childNode);
                 }
-                Node parent = map.get(file.getParent().toAbsolutePath().normalize());
-                if (parent != null) {
-                    Node node = new Node(file, false, attrs.size());
-                    parent.children.add(node);
-                }
-                return FileVisitResult.CONTINUE;
+                currentNode = childNode;
             }
-        });
+        }
 
         pruneEmptyDirs(rootNode);
         sortTree(rootNode);
@@ -72,14 +108,11 @@ public final class FastFileTree {
 
     private static boolean pruneEmptyDirs(Node node) {
         if (!node.isDirectory) {
-            return false; // files are never pruned
+            return false;
         }
-
         node.children.removeIf(FastFileTree::pruneEmptyDirs);
-
         return node.children.isEmpty();
     }
-
 
     private static void sortTree(Node node) {
         node.children.sort((a, b) -> {

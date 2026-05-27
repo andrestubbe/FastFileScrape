@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 public final class FastFileScrapeContent {
@@ -24,35 +23,61 @@ public final class FastFileScrapeContent {
 
     public static void scrape(Config cfg, Sink sink) throws IOException {
         Objects.requireNonNull(cfg.root, "root");
-        GlobMatcher matcher = new GlobMatcher(cfg.includeGlobs, cfg.excludeGlobs, cfg.root);
 
-        Files.walkFileTree(cfg.root, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                if (!matcher.matchesDir(dir)) {
-                    return FileVisitResult.SKIP_SUBTREE;
+        // 1. native traverse and filter via FastGLOB
+        Set<String> allRelativePaths = new LinkedHashSet<>();
+        for (String includeGlob : cfg.includeGlobs) {
+            String[] matches = fastglob.FastGLOB.glob(cfg.root.toString(), includeGlob);
+            if (matches != null) {
+                allRelativePaths.addAll(Arrays.asList(matches));
+            }
+        }
+
+        // 2. Setup exclude matchers
+        FileSystem fs = FileSystems.getDefault();
+        List<PathMatcher> excludeMatchers = new ArrayList<>();
+        for (String excludeGlob : cfg.excludeGlobs) {
+            excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
+        }
+
+        // 3. Process matches natively
+        for (String relStr : allRelativePaths) {
+            Path relPath = Paths.get(relStr);
+
+            // Check exclusions
+            boolean excluded = false;
+            for (PathMatcher matcher : excludeMatchers) {
+                if (matcher.matches(relPath)) {
+                    excluded = true;
+                    break;
                 }
-                return FileVisitResult.CONTINUE;
+                String cleanExclude = matcher.toString().replace("glob:", "").replace("/**", "");
+                if (relStr.startsWith(cleanExclude)) {
+                    excluded = true;
+                    break;
+                }
+            }
+            if (excluded) {
+                continue;
             }
 
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!matcher.matchesFile(file)) {
-                    return FileVisitResult.CONTINUE;
+            Path absolutePath = cfg.root.resolve(relPath);
+            try {
+                long size = Files.size(absolutePath);
+                if (size > cfg.maxFileSizeBytes) {
+                    continue;
                 }
-                if (attrs.size() > cfg.maxFileSizeBytes) {
-                    return FileVisitResult.CONTINUE;
-                }
-                String content = Files.readString(file, cfg.charset);
+                String content = Files.readString(absolutePath, cfg.charset);
                 Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
                     try {
-                        sink.onChunk(file, chunkIndex, chunk);
+                        sink.onChunk(absolutePath, chunkIndex, chunk);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 });
-                return FileVisitResult.CONTINUE;
+            } catch (IOException e) {
+                // Ignore missing or inaccessible files
             }
-        });
+        }
     }
 }

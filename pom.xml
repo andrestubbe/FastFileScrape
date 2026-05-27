@@ -25,6 +25,28 @@
     <artifactId>FastFileScrape</artifactId>
     <version>0.1.0</version>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <!-- FastGLOB JNI Module -->
+        <dependency>
+            <groupId>com.github.andrestubbe</groupId>
+            <artifactId>FastGlob</artifactId>
+            <version>v0.1.0</version>
+        </dependency>
+        <!-- FastCore JNI Loader -->
+        <dependency>
+            <groupId>com.github.andrestubbe</groupId>
+            <artifactId>fastcore</artifactId>
+            <version>v1.0.0</version>
+        </dependency>
+    </dependencies>
+
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
