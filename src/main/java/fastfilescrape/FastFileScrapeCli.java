@@ -80,26 +80,30 @@ public final class FastFileScrapeCli {
 
                 if (format == Format.TEXT) {
                     FastFileScrapeContent.scrape(ccfg, (file, chunkIndex, content) -> {
-                        uniqueFiles.add(file);
-                        chunkCount[0]++;
-                        totalBytes[0] += content.length();
-                        
-                        out.write("=== " + root.relativize(file) + " (chunk " + chunkIndex + ") ===\n");
-                        out.write(content.toString());
-                        out.write("\n\n");
+                        synchronized (out) {
+                            uniqueFiles.add(file);
+                            chunkCount[0]++;
+                            totalBytes[0] += content.length();
+                            
+                            out.write("=== " + root.relativize(file) + " (chunk " + chunkIndex + ") ===\n");
+                            out.write(content.toString());
+                            out.write("\n\n");
+                        }
                     });
                 } else {
                     FastFileScrapeContent.scrape(ccfg, (file, chunkIndex, content) -> {
-                        uniqueFiles.add(file);
-                        chunkCount[0]++;
-                        totalBytes[0] += content.length();
+                        synchronized (out) {
+                            uniqueFiles.add(file);
+                            chunkCount[0]++;
+                            totalBytes[0] += content.length();
 
-                        String json = toJsonLine(root.relativize(file).toString(), chunkIndex, content.toString());
-                        if (pretty) {
-                            json = toPrettyJsonLine(root.relativize(file).toString(), chunkIndex, content.toString());
+                            String json = toJsonLine(root.relativize(file).toString(), chunkIndex, content.toString());
+                            if (pretty) {
+                                json = toPrettyJsonLine(root.relativize(file).toString(), chunkIndex, content.toString());
+                            }
+                            out.write(json);
+                            out.write("\n");
                         }
-                        out.write(json);
-                        out.write("\n");
                     });
                 }
             }

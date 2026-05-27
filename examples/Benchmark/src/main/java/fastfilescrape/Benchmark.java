@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Performance Benchmark comparing FastFileScrape (natively accelerated by FastGLOB)
@@ -114,7 +115,7 @@ public class Benchmark {
         cfg.maxChunkBytes = 64000;
         cfg.maxFileSizeBytes = 5_000_000;
         
-        final int[] chunkCount = {0};
+        final AtomicInteger chunkCount = new AtomicInteger(0);
         
         long tStart = System.nanoTime();
         // Step 1: Native glob JNI call
@@ -132,53 +133,66 @@ public class Benchmark {
         FileSystem fs = FileSystems.getDefault();
         List<PathMatcher> excludeMatchers = new ArrayList<>();
         List<String> cleanExcludes = new ArrayList<>();
+        List<String> fastExcludes = new ArrayList<>();
         for (String excludeGlob : cfg.excludeGlobs) {
             excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
             cleanExcludes.add(excludeGlob.replace("glob:", "").replace("/**", ""));
+            
+            String clean = excludeGlob.replace("**/", "").replace("/**", "");
+            if (!clean.isEmpty()) {
+                fastExcludes.add(clean);
+            }
         }
         long tFilter = System.nanoTime() - tFilterStart;
         
         long tReadStart = System.nanoTime();
-        for (String relStr : allRelativePaths) {
+        allRelativePaths.parallelStream().forEach(relStr -> {
             Path relPath = Paths.get(relStr);
             
             // Check exclusions
             boolean excluded = false;
-            for (int k = 0; k < excludeMatchers.size(); k++) {
-                PathMatcher matcher = excludeMatchers.get(k);
-                if (matcher.matches(relPath)) {
+            for (String fastEx : fastExcludes) {
+                if (relStr.contains("/" + fastEx + "/") || relStr.startsWith(fastEx + "/")) {
                     excluded = true;
                     break;
                 }
-                String cleanExclude = cleanExcludes.get(k);
-                if (relStr.startsWith(cleanExclude)) {
-                    excluded = true;
-                    break;
-                }
-            }
-            if (excluded) {
-                continue;
             }
             
-            Path absolutePath = cfg.root.resolve(relPath);
-            try {
-                long size = absolutePath.toFile().length();
-                if (size > cfg.maxFileSizeBytes) {
-                    continue;
+            if (!excluded) {
+                for (int k = 0; k < excludeMatchers.size(); k++) {
+                    PathMatcher matcher = excludeMatchers.get(k);
+                    if (matcher.matches(relPath)) {
+                        excluded = true;
+                        break;
+                    }
+                    String cleanExclude = cleanExcludes.get(k);
+                    if (relStr.startsWith(cleanExclude)) {
+                        excluded = true;
+                        break;
+                    }
                 }
-                String content = new String(Files.readAllBytes(absolutePath), cfg.charset);
-                Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
-                    chunkCount[0]++;
-                });
-            } catch (IOException e) {
-                // Ignore missing or inaccessible files
             }
-        }
+            
+            if (!excluded) {
+                Path absolutePath = cfg.root.resolve(relPath);
+                try {
+                    long size = absolutePath.toFile().length();
+                    if (size <= cfg.maxFileSizeBytes) {
+                        String content = new String(Files.readAllBytes(absolutePath), cfg.charset);
+                        Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
+                            chunkCount.incrementAndGet();
+                        });
+                    }
+                } catch (IOException e) {
+                    // Ignore missing or inaccessible files
+                }
+            }
+        });
         long tRead = System.nanoTime() - tReadStart;
         
         System.out.printf("  [Telemetry] JNI: %.2f ms | Filter Setup: %.2f ms | Read/Chunk: %.2f ms | Total: %.2f ms\n",
             tJni / 1_000_000.0, tFilter / 1_000_000.0, tRead / 1_000_000.0, (System.nanoTime() - t0) / 1_000_000.0);
             
-        return chunkCount[0];
+        return chunkCount.get();
     }
 }

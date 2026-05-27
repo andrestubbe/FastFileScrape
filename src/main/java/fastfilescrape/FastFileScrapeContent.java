@@ -48,8 +48,8 @@ public final class FastFileScrapeContent {
             }
         }
 
-        // 3. Process matches natively
-        for (String relStr : allRelativePaths) {
+        // 3. Process matches natively and in parallel
+        allRelativePaths.parallelStream().forEach(relStr -> {
             Path relPath = Paths.get(relStr);
 
             // Check exclusions
@@ -78,27 +78,24 @@ public final class FastFileScrapeContent {
                 }
             }
             
-            if (excluded) {
-                continue;
-            }
-
-            Path absolutePath = cfg.root.resolve(relPath);
-            try {
-                long size = absolutePath.toFile().length();
-                if (size > cfg.maxFileSizeBytes) {
-                    continue;
-                }
-                String content = new String(Files.readAllBytes(absolutePath), cfg.charset);
-                Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
-                    try {
-                        sink.onChunk(absolutePath, chunkIndex, chunk);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+            if (!excluded) {
+                Path absolutePath = cfg.root.resolve(relPath);
+                try {
+                    long size = absolutePath.toFile().length();
+                    if (size <= cfg.maxFileSizeBytes) {
+                        String content = new String(Files.readAllBytes(absolutePath), cfg.charset);
+                        Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
+                            try {
+                                sink.onChunk(absolutePath, chunkIndex, chunk);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
                     }
-                });
-            } catch (IOException e) {
-                // Ignore missing or inaccessible files
+                } catch (IOException e) {
+                    // Ignore missing or inaccessible files
+                }
             }
-        }
+        });
     }
 }
