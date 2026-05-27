@@ -37,9 +37,15 @@ public final class FastFileScrapeContent {
         FileSystem fs = FileSystems.getDefault();
         List<PathMatcher> excludeMatchers = new ArrayList<>();
         List<String> cleanExcludes = new ArrayList<>();
+        List<String> fastExcludes = new ArrayList<>();
         for (String excludeGlob : cfg.excludeGlobs) {
             excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
             cleanExcludes.add(excludeGlob.replace("glob:", "").replace("/**", ""));
+            
+            String clean = excludeGlob.replace("**/", "").replace("/**", "");
+            if (!clean.isEmpty()) {
+                fastExcludes.add(clean);
+            }
         }
 
         // 3. Process matches natively
@@ -48,18 +54,30 @@ public final class FastFileScrapeContent {
 
             // Check exclusions
             boolean excluded = false;
-            for (int k = 0; k < excludeMatchers.size(); k++) {
-                PathMatcher matcher = excludeMatchers.get(k);
-                if (matcher.matches(relPath)) {
-                    excluded = true;
-                    break;
-                }
-                String cleanExclude = cleanExcludes.get(k);
-                if (relStr.startsWith(cleanExclude)) {
+            
+            // Fast-path simple string contains (orders of magnitude faster than regex PathMatcher)
+            for (String fastEx : fastExcludes) {
+                if (relStr.contains("/" + fastEx + "/") || relStr.startsWith(fastEx + "/")) {
                     excluded = true;
                     break;
                 }
             }
+            
+            if (!excluded) {
+                for (int k = 0; k < excludeMatchers.size(); k++) {
+                    PathMatcher matcher = excludeMatchers.get(k);
+                    if (matcher.matches(relPath)) {
+                        excluded = true;
+                        break;
+                    }
+                    String cleanExclude = cleanExcludes.get(k);
+                    if (relStr.startsWith(cleanExclude)) {
+                        excluded = true;
+                        break;
+                    }
+                }
+            }
+            
             if (excluded) {
                 continue;
             }
