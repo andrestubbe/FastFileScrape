@@ -37,7 +37,7 @@
         <dependency>
             <groupId>com.github.andrestubbe</groupId>
             <artifactId>FastGlob</artifactId>
-            <version>v0.1.0</version>
+            <version>195122eab5</version>
         </dependency>
         <!-- FastCore JNI Loader -->
         <dependency>
