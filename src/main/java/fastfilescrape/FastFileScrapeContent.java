@@ -36,8 +36,10 @@ public final class FastFileScrapeContent {
         // 2. Setup exclude matchers
         FileSystem fs = FileSystems.getDefault();
         List<PathMatcher> excludeMatchers = new ArrayList<>();
+        List<String> cleanExcludes = new ArrayList<>();
         for (String excludeGlob : cfg.excludeGlobs) {
             excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
+            cleanExcludes.add(excludeGlob.replace("glob:", "").replace("/**", ""));
         }
 
         // 3. Process matches natively
@@ -46,12 +48,13 @@ public final class FastFileScrapeContent {
 
             // Check exclusions
             boolean excluded = false;
-            for (PathMatcher matcher : excludeMatchers) {
+            for (int k = 0; k < excludeMatchers.size(); k++) {
+                PathMatcher matcher = excludeMatchers.get(k);
                 if (matcher.matches(relPath)) {
                     excluded = true;
                     break;
                 }
-                String cleanExclude = matcher.toString().replace("glob:", "").replace("/**", "");
+                String cleanExclude = cleanExcludes.get(k);
                 if (relStr.startsWith(cleanExclude)) {
                     excluded = true;
                     break;
@@ -63,11 +66,11 @@ public final class FastFileScrapeContent {
 
             Path absolutePath = cfg.root.resolve(relPath);
             try {
-                long size = Files.size(absolutePath);
+                long size = absolutePath.toFile().length();
                 if (size > cfg.maxFileSizeBytes) {
                     continue;
                 }
-                String content = Files.readString(absolutePath, cfg.charset);
+                String content = new String(Files.readAllBytes(absolutePath), cfg.charset);
                 Chunker.chunk(content, cfg.maxChunkBytes, (chunkIndex, chunk) -> {
                     try {
                         sink.onChunk(absolutePath, chunkIndex, chunk);

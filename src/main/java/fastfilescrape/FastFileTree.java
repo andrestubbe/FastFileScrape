@@ -40,8 +40,10 @@ public final class FastFileTree {
         // 2. Setup exclude matchers
         FileSystem fs = FileSystems.getDefault();
         List<PathMatcher> excludeMatchers = new ArrayList<>();
+        List<String> cleanExcludes = new ArrayList<>();
         for (String excludeGlob : cfg.excludeGlobs) {
             excludeMatchers.add(fs.getPathMatcher("glob:" + excludeGlob));
+            cleanExcludes.add(excludeGlob.replace("glob:", "").replace("/**", ""));
         }
 
         Node rootNode = new Node(cfg.root, true, 0L);
@@ -52,12 +54,13 @@ public final class FastFileTree {
 
             // Check exclusions
             boolean excluded = false;
-            for (PathMatcher matcher : excludeMatchers) {
+            for (int k = 0; k < excludeMatchers.size(); k++) {
+                PathMatcher matcher = excludeMatchers.get(k);
                 if (matcher.matches(relPath)) {
                     excluded = true;
                     break;
                 }
-                String cleanExclude = matcher.toString().replace("glob:", "").replace("/**", "");
+                String cleanExclude = cleanExcludes.get(k);
                 if (relStr.startsWith(cleanExclude)) {
                     excluded = true;
                     break;
