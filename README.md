@@ -138,11 +138,14 @@ dependencies {
 
 ### Option 3: Direct Download (No Build Tool)
 
-Download the latest JARs directly to add them to your classpath:
+Download the pre-compiled JARs to add them to your classpath:
 
-1. 📦 *
-   *[fastfilescrape-v0.1.0.jar](https://github.com/andrestubbe/FastFileIndex/releases/download/v0.1.0/fastfilescrape-v0.1.0.jar)
-   ** (The Core Library)
+1. 📦 [**FastFileScrape-v0.1.0.jar**](https://github.com/andrestubbe/FastFileScrape/releases) (The Scraper Core Library)
+2. 📦 [**FastGlob-v0.1.0.jar**](https://github.com/andrestubbe/FastGLOB/releases) (The Native Glob Matching Library)
+3. ⚙️ [**fastcore-v1.0.0.jar**](https://github.com/andrestubbe/FastCore/releases) (The Mandatory JNI Loader)
+
+> [!IMPORTANT]
+> Since FastFileScrape is natively accelerated, all three JARs must be present in your classpath for the JNI-accelerated directory walking to operate correctly on Windows.
 
 ---
 
