@@ -88,12 +88,7 @@ public final class FastFileTree {
 
                 if (childNode == null) {
                     if (isLast) {
-                        long size = 0;
-                        try {
-                            size = Files.size(currentPath);
-                        } catch (IOException e) {
-                            // File might have been deleted or inaccessible
-                        }
+                        long size = currentPath.toFile().length();
                         childNode = new Node(currentPath, false, size);
                     } else {
                         childNode = new Node(currentPath, true, 0L);
