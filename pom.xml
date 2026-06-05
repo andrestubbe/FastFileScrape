@@ -50,7 +50,7 @@
 
     <groupId>fastfilescrape</groupId>
     <artifactId>FastFileScrape</artifactId>
-    <version>0.1.0</version>
+    <version>v0.1.0</version>
 
     <repositories>
         <repository>
@@ -63,13 +63,13 @@
         <!-- FastGLOB JNI Module -->
         <dependency>
             <groupId>com.github.andrestubbe</groupId>
-            <artifactId>FastGlob</artifactId>
+            <artifactId>FastGLOB</artifactId>
             <version>195122eab5</version>
         </dependency>
         <!-- FastCore JNI Loader -->
         <dependency>
             <groupId>com.github.andrestubbe</groupId>
-            <artifactId>fastcore</artifactId>
+            <artifactId>FastCore</artifactId>
             <version>v1.0.0</version>
         </dependency>
     </dependencies>
