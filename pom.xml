@@ -50,7 +50,7 @@
 
     <groupId>fastfilescrape</groupId>
     <artifactId>FastFileScrape</artifactId>
-    <version>v0.1.0</version>
+    <version>0.1.0</version>
 
     <repositories>
         <repository>
