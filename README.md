@@ -1,6 +1,6 @@
-# FastFileScrape v0.1.0 [ALPHA] — Ultra‑Fast File Tree & Content Scraper for Java
+# FastFileScrape 0.1.0 [ALPHA] — Ultra‑Fast File Tree & Content Scraper for Java
 
-[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen.svg)](https://github.com/andrestubbe/FastFileScrape/releases/tag/v0.1.0)
+[![Status](https://img.shields.io/badge/status-0.1.0-brightgreen.svg)](https://github.com/andrestubbe/FastFileScrape/releases/tag/0.1.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.java.com)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010+-lightgrey.svg)]()
@@ -120,12 +120,12 @@ Add the JitPack repository and the dependencies to your `pom.xml`:
     <dependency>
         <groupId>com.github.andrestubbe</groupId>
         <artifactId>FastFileScrape</artifactId>
-        <version>v0.1.0</version>
+        <version>0.1.0</version>
     </dependency>
     <dependency>
         <groupId>com.github.andrestubbe</groupId>
         <artifactId>FastGLOB</artifactId>
-        <version>v0.1.0</version>
+        <version>0.1.0</version>
     </dependency>
     <dependency>
         <groupId>com.github.andrestubbe</groupId>
@@ -142,8 +142,8 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.andrestubbe:FastFileScrape:v0.1.0'
-    implementation 'com.github.andrestubbe:FastGLOB:v0.1.0'
+    implementation 'com.github.andrestubbe:FastFileScrape:0.1.0'
+    implementation 'com.github.andrestubbe:FastGLOB:0.1.0'
     implementation 'com.github.andrestubbe:FastCore:v1.0.0'
 }
 ```
@@ -152,8 +152,8 @@ dependencies {
 
 Download the pre-compiled JARs to add them to your classpath:
 
-1. 📦 [**FastFileScrape-v0.1.0.jar**](https://github.com/andrestubbe/FastFileScrape/releases) (The Scraper Core Library)
-2. 📦 [**FastGlob-v0.1.0.jar**](https://github.com/andrestubbe/FastGLOB/releases) (The Native Glob Matching Library)
+1. 📦 [**FastFileScrape-0.1.0.jar**](https://github.com/andrestubbe/FastFileScrape/releases) (The Scraper Core Library)
+2. 📦 [**FastGlob-0.1.0.jar**](https://github.com/andrestubbe/FastGLOB/releases) (The Native Glob Matching Library)
 3. ⚙️ [**fastcore-v1.0.0.jar**](https://github.com/andrestubbe/FastCore/releases) (The Mandatory JNI Loader)
 
 > [!IMPORTANT]
