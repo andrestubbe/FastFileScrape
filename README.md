@@ -1,4 +1,4 @@
-# FastFileScrape 0.1.0 [ALPHA-2026-06] — Ultra‑Fast File Tree & Content Scraper for Java
+# FastFileScrape 0.1.0 [ALPHA-2026-05-25] — Ultra‑Fast File Tree & Content Scraper for Java
 
 [![Status](https://img.shields.io/badge/status-0.1.0-brightgreen.svg)](https://github.com/andrestubbe/FastFileScrape/releases/tag/0.1.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
