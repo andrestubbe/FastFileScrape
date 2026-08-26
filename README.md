@@ -18,49 +18,37 @@ It provides two core capabilities:
 
 ---
 
-## Table of Contents
-
-- [Key Features](#key-features)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [Demo (Java)](#demo-java)
-- [API Reference](#api-reference)
-- [Roadmap](#roadmap)
-- [License](#license)
-
----
-
-## Key Features
-
-### 🟩 FastFileTree — Directory Structure Engine
-
-- Recursive directory walking
-- Include/Exclude glob filters
-- Sorted output (folders → files)
-- JSON or ASCII tree output
-- Git‑ignore aware (optional)
-
-### 🟧 FastFileScrapeContent — File Content Engine
-
-- Extracts file contents with UTF‑8 safety
-- Chunking by byte size or newline boundaries
-- Include/Exclude patterns
-- JSONL or plain text output
-- Ideal for LLM context ingestion
-
-### 🟦 CLI Tool — `fastfilescrape`
-
-- `tree` → structure only
-- `content` → file contents only
-- `all` → both combined
-- Output to stdout or file
-- JSONL mode for AI pipelines
-
----
-
 ## Quick Start
 
-```pash
+```java
+import fastfilescrape.*;
+import java.nio.file.Path;
+import java.util.List;
+
+public class Demo {
+    public static void main(String[] args) throws Exception {
+        // 1. FastFileTree — Build and print directory tree
+        var tcfg = new FastFileTree.Config();
+        tcfg.root = Path.of(".");
+        var tree = FastFileTree.build(tcfg);
+        FastFileTree.printTree(tree, System.out);
+
+        // 2. FastFileScrapeContent — Extract chunked contents for LLMs & agents
+        var ccfg = new FastFileScrapeContent.Config();
+        ccfg.root = Path.of(".");
+        ccfg.includeGlobs = List.of("**/*.java");
+
+        FastFileScrapeContent.scrape(ccfg, (file, chunk, text) -> {
+            System.out.println("=== " + file + " (chunk " + chunk + ") ===");
+            System.out.println(text);
+        });
+    }
+}
+```
+
+### CLI Tool — `fastfilescrape`
+
+```bash
 # Show directory tree
 fastfilescrape tree --root . --include "**/*.java"
 
@@ -73,32 +61,15 @@ fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.json
 
 ---
 
-## Demo (Java)
+## Table of Contents
 
-```java
-import fastfilescrape.*;
-
-public class Demo {
-    public static void main(String[] args) throws Exception {
-
-        // Tree
-        var tcfg = new FastFileTree.Config();
-        tcfg.root = Path.of(".");
-        var tree = FastFileTree.build(tcfg);
-        FastFileTree.printTree(tree, System.out);
-
-        // Content
-        var ccfg = new FastFileScrapeContent.Config();
-        ccfg.root = Path.of(".");
-        ccfg.includeGlobs = List.of("**/*.java");
-
-        FastFileScrapeContent.scrape(ccfg, (file, chunk, text) -> {
-            System.out.println("=== " + file + " (chunk " + chunk + ") ===");
-            System.out.println(text);
-        });
-    }
-}
-```
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [API Reference](#api-reference)
+- [Documentation](#documentation)
+- [Platform Support](#platform-support)
+- [License](#license)
+- [Related Projects](#related-projects)
 
 ---
 
