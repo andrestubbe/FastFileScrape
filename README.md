@@ -6,7 +6,17 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010+-lightgrey.svg)]()
 [![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe/FastFileScrape)
 
-**⚡ Scrape and process millions of files in milliseconds with zero latency.**
+**⚡ Scrape and process millions of files in mill[README.md](../FastGraphics/README.md)
+[README.md](../_BluePrint/README.md)
+[README.md](../FastTheme/README.md)
+[README.md](../FastFrame/README.md)
+[README.md](../FastImageSearch/README.md)
+[README.md](../FastTheme/examples/README.md)
+[README.md](../FastTouch/README.md)
+[README.md](../FastFrame/examples/README.md)
+[README.md](../FastProcess/README.md)
+[README.md](../_BluePrint/examples/README.md)
+[README.md](../FastJava/README.md)iseconds with zero latency.**
 
 FastFileScrape is the high‑speed file scraping module of the FastJava ecosystem.  
 It provides two core capabilities:
@@ -14,7 +24,7 @@ It provides two core capabilities:
 - **FastFileTree** — build complete directory trees with include/exclude rules
 - **FastFileScrapeContent** — extract file contents with chunking for LLMs and agents
 
-[**Watch Demo (YouTube)**](https://youtu.be/3yPRjiXqpaY) | <span style="color:#333333">Watch JMH Benchmark (Youtube)</span>
+[**Watch Demo (YouTube)**](https://youtu.be/3yPRjiXqpaY) | Watch JMH Benchmark (Youtube)
 
 [![FastFileScrape Showcase](docs/screenshot.png)](https://youtu.be/3yPRjiXqpaY)
 
