@@ -63,8 +63,7 @@ fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.json
 
 ## Table of Contents
 
-- [Why FastFileScrape?](#why-fastfilescrape?)
-- [Key Features](#key-features)
+- [Why FastFileScrape?](#why-fastfilescrape)
 - [Installation](#installation)
 - [API Reference](#api-reference)
 - [Documentation](#documentation)
@@ -74,7 +73,7 @@ fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.json
 
 ---
 
-## Why FastFileScrape?
+## Why FastFileScrape
 
 Java's standard `Files.walk()` and `Files.readString()` work — but they were not designed for scraping millions of files at agent speed.
 
@@ -86,8 +85,6 @@ Java's standard `Files.walk()` and `Files.readString()` work — but they were n
 | **Exclude checks** | Full `PathMatcher` regex per file | String `contains()` fast-path, regex only as fallback |
 | **LLM chunking** | Manual splitting, easy to split mid-token | Built-in UTF-8 boundary-safe 64 KB chunks |
 | **Size guard** | Manual | Configurable `maxFileSizeBytes`, skips binaries |
-
-### The real use case
 
 When an AI agent needs to read an entire codebase into context — say, 2 000 `.java` files across 400 folders — standard Java spends most of its time in filesystem overhead and sequential I/O.  
 FastFileScrape does the traversal natively, filters with a string fast-path, and reads all matching files in parallel. The `Sink` callback streams chunks directly to the agent pipeline without buffering the entire repo in memory.
