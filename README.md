@@ -14,6 +14,8 @@ It provides two core capabilities:
 - **FastFileTree** — build complete directory trees with include/exclude rules
 - **FastFileScrapeContent** — extract file contents with chunking for LLMs and agents
 
+[**Watch Demo (YouTube)**](https://youtu.be/3yPRjiXqpaY) | <span style="color:#333333">Watch JMH Benchmark (Youtube)</span>
+
 [![FastFileScrape Showcase](docs/screenshot.png)](https://youtu.be/3yPRjiXqpaY)
 
 ---
@@ -63,7 +65,7 @@ fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.json
 
 ## Table of Contents
 
-- [Why FastFileScrape?](#why-fastfilescrape)
+- [Why FastFileScrape](#why-fastfilescrape)
 - [Installation](#installation)
 - [API Reference](#api-reference)
 - [Documentation](#documentation)
