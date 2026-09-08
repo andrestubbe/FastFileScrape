@@ -63,6 +63,7 @@ fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.json
 
 ## Table of Contents
 
+- [Why FastFileScrape?](#why-fastfilescrape?)
 - [Key Features](#key-features)
 - [Installation](#installation)
 - [API Reference](#api-reference)
@@ -70,6 +71,26 @@ fastfilescrape all --root . --include "**/*.java" --format jsonl --out repo.json
 - [Platform Support](#platform-support)
 - [License](#license)
 - [Related Projects](#related-projects)
+
+---
+
+## Why FastFileScrape?
+
+Java's standard `Files.walk()` and `Files.readString()` work — but they were not designed for scraping millions of files at agent speed.
+
+| Concern | Standard Java | FastFileScrape |
+|---|---|---|
+| **Directory traversal** | `Files.walk()` — JVM syscall per entry | `FastGLOB` native Win32 traversal — batch results |
+| **Glob matching** | `PathMatcher` — regex compiled per match | FastGLOB native — string contains fast-path first |
+| **File reading** | Sequential, one file at a time | `parallelStream()` — all files in parallel |
+| **Exclude checks** | Full `PathMatcher` regex per file | String `contains()` fast-path, regex only as fallback |
+| **LLM chunking** | Manual splitting, easy to split mid-token | Built-in UTF-8 boundary-safe 64 KB chunks |
+| **Size guard** | Manual | Configurable `maxFileSizeBytes`, skips binaries |
+
+### The real use case
+
+When an AI agent needs to read an entire codebase into context — say, 2 000 `.java` files across 400 folders — standard Java spends most of its time in filesystem overhead and sequential I/O.  
+FastFileScrape does the traversal natively, filters with a string fast-path, and reads all matching files in parallel. The `Sink` callback streams chunks directly to the agent pipeline without buffering the entire repo in memory.
 
 ---
 
@@ -171,26 +192,6 @@ Download the pre-compiled JARs to add them to your classpath:
 ## License
 
 MIT License — See [LICENSE](LICENSE) file for details.
-
----
-
-## Why FastFileScrape?
-
-Java's standard `Files.walk()` and `Files.readString()` work — but they were not designed for scraping millions of files at agent speed.
-
-| Concern | Standard Java | FastFileScrape |
-|---|---|---|
-| **Directory traversal** | `Files.walk()` — JVM syscall per entry | `FastGLOB` native Win32 traversal — batch results |
-| **Glob matching** | `PathMatcher` — regex compiled per match | FastGLOB native — string contains fast-path first |
-| **File reading** | Sequential, one file at a time | `parallelStream()` — all files in parallel |
-| **Exclude checks** | Full `PathMatcher` regex per file | String `contains()` fast-path, regex only as fallback |
-| **LLM chunking** | Manual splitting, easy to split mid-token | Built-in UTF-8 boundary-safe 64 KB chunks |
-| **Size guard** | Manual | Configurable `maxFileSizeBytes`, skips binaries |
-
-### The real use case
-
-When an AI agent needs to read an entire codebase into context — say, 2 000 `.java` files across 400 folders — standard Java spends most of its time in filesystem overhead and sequential I/O.  
-FastFileScrape does the traversal natively, filters with a string fast-path, and reads all matching files in parallel. The `Sink` callback streams chunks directly to the agent pipeline without buffering the entire repo in memory.
 
 ---
 
